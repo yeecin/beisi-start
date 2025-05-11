@@ -7,7 +7,12 @@
       <el-input v-model="form.password" type="password" placeholder="请输入密码" autocomplete="off" />
     </el-form-item>
     <el-form-item>
-      <el-button type="primary" @click="submitLogin">登录</el-button>
+      <el-button type="primary" @click="submitLogin" :loading="loading" :disabled="loading">
+        {{ loading ? '登录中...' : '登录' }}
+      </el-button>
+      <div class="form-link">
+        还没有账号？<a href="javascript:;" @click="goToRegister">立即注册</a>
+      </div>
     </el-form-item>
   </el-form>
 </template>
@@ -15,43 +20,128 @@
 <script>
 export default {
   name: 'LoginForm',
+  emits: ['toRegister'],
   data() {
+    // 自定义验证函数 - 用户名不能为空
+    const validateUsername = (rule, value, callback) => {
+      if (!value) {
+        callback(new Error('用户名不能为空'));
+      } else if (value.trim() === '') {
+        callback(new Error('用户名不能只包含空格'));
+      } else {
+        callback();
+      }
+    };
+
+    // 自定义验证函数 - 密码不能为空
+    const validatePassword = (rule, value, callback) => {
+      if (!value) {
+        callback(new Error('密码不能为空'));
+      } else if (value.trim() === '') {
+        callback(new Error('密码不能只包含空格'));
+      } else {
+        callback();
+      }
+    };
+
     return {
       form: {
         username: '',
         password: '',
       },
       rules: {
-        username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-        password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+        username: [
+          { required: true, message: '用户名不能为空', trigger: 'blur' },
+          { validator: validateUsername, trigger: 'blur' },
+          { min: 3, max: 20, message: '用户名长度在3到20个字符之间', trigger: 'blur' }
+        ],
+        password: [
+          { required: true, message: '密码不能为空', trigger: 'blur' },
+          { validator: validatePassword, trigger: 'blur' },
+          { min: 6, message: '密码长度不能少于6个字符', trigger: 'blur' }
+        ],
       },
+      loading: false,
     };
   },
   methods: {
     async submitLogin() {
-      try {
-        const response = await fetch('http://127.0.0.1:5000/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(this.form),
-        });
-        const result = await response.json();
-        if (result.code === 0) {
-          this.$message.success('登录成功');
-        } else {
-          this.$message.error(result.message);
+      // 表单验证
+      this.$refs.loginForm.validate(async (valid) => {
+        if (!valid) {
+          return false;
         }
-      } catch (error) {
-        this.$message.error('登录失败，请稍后再试');
-      }
+
+        // 额外验证用户名和密码不能为空
+        if (!this.form.username || this.form.username.trim() === '') {
+          this.$message.error('用户名不能为空');
+          return false;
+        }
+
+        if (!this.form.password || this.form.password.trim() === '') {
+          this.$message.error('密码不能为空');
+          return false;
+        }
+
+        // 设置加载状态
+        this.loading = true;
+
+        try {
+          const response = await fetch('http://120.76.99.179:5000/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.form),
+          });
+
+          const result = await response.json();
+
+          if (result.code === 0) {
+            // 登录成功，存储token
+            localStorage.setItem('token', result.data.token);
+            localStorage.setItem('username', this.form.username);
+
+            this.$message.success('登录成功');
+
+            // 这里可以添加登录成功后的路由跳转
+            // this.$router.push('/dashboard');
+          } else {
+            this.$message.error(result.message || '登录失败');
+          }
+        } catch (error) {
+          console.error('登录错误:', error);
+          this.$message.error('登录失败，请稍后再试');
+        } finally {
+          // 无论成功失败，都结束loading状态
+          this.loading = false;
+        }
+      });
     },
+    // 跳转到注册的方法
+    goToRegister() {
+      this.$emit('toRegister');
+    }
   },
 };
 </script>
 
-<style>
+<style scoped>
 .el-form {
   max-width: 300px;
   margin: 0 auto;
+}
+
+.form-link {
+  margin-top: 15px;
+  text-align: right;
+  font-size: 14px;
+}
+
+.form-link a {
+  color: #409EFF;
+  text-decoration: none;
+}
+
+.form-link a:hover {
+  text-decoration: underline;
 }
 </style>
