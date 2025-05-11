@@ -18,6 +18,9 @@
 </template>
 
 <script>
+// 导入API服务
+import { login } from '@/api/user';
+
 export default {
   name: 'LoginForm',
   emits: ['toRegister'],
@@ -87,13 +90,8 @@ export default {
         this.loading = true;
 
         try {
-          const response = await fetch('http://120.76.99.179:5000/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(this.form),
-          });
-
-          const result = await response.json();
+          // 使用API服务进行登录
+          const result = await login(this.form.username, this.form.password);
 
           if (result.code === 0) {
             // 登录成功，存储token
@@ -109,7 +107,7 @@ export default {
           }
         } catch (error) {
           console.error('登录错误:', error);
-          this.$message.error('登录失败，请稍后再试');
+          this.$message.error(error.message || '登录失败，请稍后再试');
         } finally {
           // 无论成功失败，都结束loading状态
           this.loading = false;

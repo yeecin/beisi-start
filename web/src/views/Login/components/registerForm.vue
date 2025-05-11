@@ -26,6 +26,9 @@
 </template>
 
 <script>
+// 导入API服务
+import { register } from '@/api/user';
+
 export default {
   name: 'RegisterForm',
   emits: ['toLogin'],
@@ -111,16 +114,8 @@ export default {
         this.loading = true;
 
         try {
-          const response = await fetch('http://120.76.99.179:5000/api/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              username: this.form.username,
-              password: this.form.password,
-            }),
-          });
-
-          const result = await response.json();
+          // 使用API服务进行注册
+          const result = await register(this.form.username, this.form.password);
 
           if (result.code === 0) {
             this.$message.success('注册成功');
@@ -133,7 +128,7 @@ export default {
           }
         } catch (error) {
           console.error('注册错误:', error);
-          this.$message.error('注册失败，请稍后再试');
+          this.$message.error(error.message || '注册失败，请稍后再试');
         } finally {
           // 无论成功失败，都结束loading状态
           this.loading = false;
