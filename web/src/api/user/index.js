@@ -2,7 +2,7 @@
  * 用户相关API服务
  */
 
-const API_BASE_URL = 'http://120.76.99.179:5000/api';
+const API_BASE_URL = 'http://YourBaseUrl/api';
 
 /**
  * 用户登录
